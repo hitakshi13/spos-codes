@@ -83,4 +83,4 @@ public class PriorityNonPreemptiveAT {
 
         sc.close();
     }
-}This is priority algorithm, so is it non-preemptive?
+}
