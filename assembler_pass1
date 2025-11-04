@@ -1,0 +1,158 @@
+import java.util.*;
+import java.io.*;
+
+public class Pass1 {
+    static int address = 0;           // Keeps track of current address (Location Counter)
+    static int sadd[] = new int[10];  // Stores addresses of symbols
+    static int ladd[] = new int[10];  // Stores addresses of literals
+
+    public static void main(String args[]) {
+        BufferedReader br;
+        String input = null;
+
+        // Instruction categories
+        String IS[] = {"ADD", "SUB", "MUL", "MOV"};             // Imperative Statements
+        String UserReg[] = {"AREG", "BREG", "CREG", "DREG"};    // Registers
+        String AD[] = {"START", "END"};                         // Assembler Directives
+        String DL[] = {"DC", "DS"};                             // Declarative Statements
+
+        // Variables for counting and flags
+        int lc = 0;        // Location counter
+        int scount = 0;    // Symbol counter
+        int lcount = 0;    // Literal counter
+        int flag = 0;      // Used to check if previous token was a register
+        int flag2 = 0;     // Used to track symbol reference (not used much later)
+
+        String tt = null;
+        String sv[] = new String[10];  // Symbol names
+        String lv[] = new String[10];  // Literal values
+
+        try {
+            // Input file: source program
+            br = new BufferedReader(new FileReader("initial.txt"));
+
+            // Output files
+            PrintWriter IM = new PrintWriter(new File("IM.txt")); // Intermediate Code
+            PrintWriter ST = new PrintWriter(new File("ST.txt")); // Symbol Table
+            PrintWriter LT = new PrintWriter(new File("LT.txt")); // Literal Table
+
+            int k = 0; // index for symbol address storage
+            int l = 0; // index for literal address storage
+
+            // Read each line from the source code
+            while ((input = br.readLine()) != null) {
+                StringTokenizer st = new StringTokenizer(input, " ");
+
+                // Process each token (word) in a line
+                while (st.hasMoreTokens()) {
+                    tt = st.nextToken();
+
+                    // START <address> → initialize LC
+                    if (tt.matches("\\d*") && tt.length() > 2) {
+                        lc = Integer.parseInt(tt);
+                        IM.println(lc);
+                        address = lc - 1;
+                    } 
+                    else {
+                        // Check if token is Assembler Directive (START, END)
+                        for (int i = 0; i < AD.length; i++) {
+                            if (tt.equals(AD[i])) {
+                                IM.print("AD " + (i + 1) + " ");
+                            }
+                        }
+
+                        // Check if token is Imperative Statement (ADD, MOV, etc.)
+                        for (int i = 0; i < IS.length; i++) {
+                            if (tt.equals(IS[i])) {
+                                IM.print("IS " + (i + 1) + " ");
+                            }
+                        }
+
+                        // Check if token is a Register (AREG, BREG, etc.)
+                        for (int i = 0; i < UserReg.length; i++) {
+                            if (tt.equals(UserReg[i])) {
+                                IM.print((i + 1) + " ");
+                                flag = 1;
+                            }
+                        }
+
+                        // Check if token is Declarative (DC, DS)
+                        for (int i = 0; i < DL.length; i++) {
+                            if (tt.equals(DL[i])) {
+                                IM.print("DL " + (i + 1) + " ");
+                            }
+                        }
+
+                        // If token is a single symbol (e.g., variable name)
+                        if (tt.length() == 1 && !(st.hasMoreTokens()) && flag == 1) {
+                            boolean found = false;
+                            for (int i = 0; i < scount; i++) {
+                                if (sv[i] != null && sv[i].equals(tt)) {
+                                    IM.print("S" + i);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                IM.print("S" + scount);
+                                sv[scount] = tt;
+                                scount++;
+                            }
+                        }
+
+                        // If token is a label (symbol at the start of a statement)
+                        if (tt.length() == 1 && (st.hasMoreTokens())) {
+                            IM.print(tt + " ");
+                            sadd[k] = address;
+                            k++;
+                        }
+
+                        // If token is a literal (e.g., =2, =3)
+                        if (tt.charAt(0) == '=') {
+                            IM.print("L" + lcount);
+                            lv[lcount] = tt;
+                            lcount++;
+                        }
+
+                        // Handle Declarative DS (Define Storage)
+                        if (tt.equals("DS")) {
+                            int a = Integer.parseInt(st.nextToken());
+                            address = address + a - 1;
+                            IM.println();
+                        }
+
+                        // End of line → new line in IM file
+                        if (!st.hasMoreTokens()) {
+                            IM.println();
+                        }
+                    }
+                }
+                address++;
+            }
+
+            IM.close();
+            address--;
+
+            // Assign addresses to literals (after program ends)
+            for (int i = 0; i < lcount; i++) {
+                ladd[i] = address;
+                address++;
+            }
+
+            // Write Symbol Table
+            for (int i = 0; i < scount; i++) {
+                ST.println(i + "\t" + sv[i] + "\t" + sadd[i]);
+            }
+            ST.close();
+
+            // Write Literal Table
+            for (int i = 0; i < lcount; i++) {
+                LT.println(i + "\t" + lv[i] + "\t" + ladd[i]);
+            }
+            LT.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
