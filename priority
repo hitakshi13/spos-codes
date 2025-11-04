@@ -1,86 +1,82 @@
 import java.util.*;
 
-public class PriorityNonPreemptiveAT {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
+public class Priority {
+    public static void main(String args[]) {
+        Scanner s = new Scanner(System.in);
 
-        // Step 1: Input number of processes
         System.out.print("Enter number of processes: ");
-        int n = sc.nextInt();
+        int n = s.nextInt();
 
-        int[] pid = new int[n];  // Process IDs
-        int[] at = new int[n];   // Arrival Times
-        int[] bt = new int[n];   // Burst Times
-        int[] pr = new int[n];   // Priorities
-        int[] ct = new int[n];   // Completion Times
-        int[] tat = new int[n];  // Turnaround Times
-        int[] wt = new int[n];   // Waiting Times
-        boolean[] completed = new boolean[n]; // Track completed processes
+        int arrival[] = new int[n];
+        int burst[] = new int[n];
+        int completion[] = new int[n];
+        int turntt[] = new int[n];   // turnaround time
+        int wait[] = new int[n];     // waiting time
+        int priority[] = new int[n];
+        int process[] = new int[n];  // process ids
+        boolean isCompleted[] = new boolean[n];
 
-        // Step 2: Input process details
+        // Input
         for (int i = 0; i < n; i++) {
-            pid[i] = i + 1;
-            System.out.print("Enter arrival time for P" + pid[i] + ": ");
-            at[i] = sc.nextInt();
-            System.out.print("Enter burst time for P" + pid[i] + ": ");
-            bt[i] = sc.nextInt();
-            System.out.print("Enter priority for P" + pid[i] + " (smaller number = higher priority): ");
-            pr[i] = sc.nextInt();
+            System.out.print("\nEnter arrival time of process " + (i + 1) + ": ");
+            arrival[i] = s.nextInt();
+            System.out.print("Enter burst time of process " + (i + 1) + ": ");
+            burst[i] = s.nextInt();
+            System.out.print("Enter priority of process " + (i + 1) + ": ");
+            priority[i] = s.nextInt();
+            process[i] = i + 1;
+            isCompleted[i] = false;
         }
 
-        // Step 3: Initialize variables for CPU time tracking
+        float total_tat = 0, total_wt = 0;
         int completedCount = 0;
         int currentTime = 0;
 
-        // Step 4: Scheduling loop
-        while (completedCount < n) {
-            int idx = -1;
+        // Scheduling (non-preemptive priority; lower number => higher priority)
+        while (completedCount != n) {
+            int currentProcess = -1;
             int highestPriority = Integer.MAX_VALUE;
 
-            // Find the process with the highest priority among those that have arrived
             for (int i = 0; i < n; i++) {
-                if (at[i] <= currentTime && !completed[i]) {
-                    if (pr[i] < highestPriority) {
-                        highestPriority = pr[i];
-                        idx = i;
-                    } else if (pr[i] == highestPriority) {
-                        // If same priority, choose the one with earlier arrival
-                        if (at[i] < at[idx]) {
-                            idx = i;
+                if (!isCompleted[i] && arrival[i] <= currentTime) {
+                    if (priority[i] < highestPriority) {
+                        highestPriority = priority[i];
+                        currentProcess = i;
+                    } else if (priority[i] == highestPriority) {
+                        // tie-breaker: earlier arrival or smaller pid (optional)
+                        if (currentProcess == -1 || arrival[i] < arrival[currentProcess]) {
+                            currentProcess = i;
                         }
                     }
                 }
             }
 
-            if (idx != -1) {
-                // Process found to execute
-                
-              currentTime += bt[idx]; //this shows non premptive
-                ct[idx] = currentTime;
-                tat[idx] = ct[idx] - at[idx];
-                wt[idx] = tat[idx] - bt[idx];
-                completed[idx] = true;
-                completedCount++;
-            } else {
-                // No process has arrived yet
+            if (currentProcess == -1) {
                 currentTime++;
+                continue;
             }
+
+            currentTime += burst[currentProcess];
+            completion[currentProcess] = currentTime;
+            turntt[currentProcess] = completion[currentProcess] - arrival[currentProcess];
+            wait[currentProcess] = turntt[currentProcess] - burst[currentProcess];
+            isCompleted[currentProcess] = true;
+
+            total_tat += turntt[currentProcess];
+            total_wt += wait[currentProcess];
+            completedCount++;
         }
 
-        // Step 5: Display results
+        // Display results using the original variable names
         System.out.println("\nPID\tAT\tBT\tPR\tCT\tTAT\tWT");
-        float totalTAT = 0, totalWT = 0;
         for (int i = 0; i < n; i++) {
-            totalTAT += tat[i];
-            totalWT += wt[i];
-            System.out.println("P" + pid[i] + "\t" + at[i] + "\t" + bt[i] + "\t" +
-                    pr[i] + "\t" + ct[i] + "\t" + tat[i] + "\t" + wt[i]);
+            System.out.println("P" + process[i] + "\t" + arrival[i] + "\t" + burst[i] + "\t" +
+                    priority[i] + "\t" + completion[i] + "\t" + turntt[i] + "\t" + wait[i]);
         }
 
-        // Step 6: Print averages
-        System.out.printf("\nAverage Turnaround Time = %.2f", totalTAT / n);
-        System.out.printf("\nAverage Waiting Time = %.2f\n", totalWT / n);
+        System.out.printf("\nAverage Turnaround Time = %.2f", total_tat / n);
+        System.out.printf("\nAverage Waiting Time = %.2f\n", total_wt / n);
 
-        sc.close();
+        s.close();
     }
 }
