@@ -42,11 +42,6 @@ public class Priority {
                     if (priority[i] < highestPriority) {
                         highestPriority = priority[i];
                         currentProcess = i;
-                    } else if (priority[i] == highestPriority) {
-                        // tie-breaker: earlier arrival or smaller pid (optional)
-                        if (currentProcess == -1 || arrival[i] < arrival[currentProcess]) {
-                            currentProcess = i;
-                        }
                     }
                 }
             }
