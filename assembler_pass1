@@ -21,7 +21,6 @@ public class Pass1 {
         int scount = 0;    // Symbol counter
         int lcount = 0;    // Literal counter
         int flag = 0;      // Used to check if previous token was a register
-        int flag2 = 0;     // Used to track symbol reference (not used much later)
 
         String tt = null;
         String sv[] = new String[10];  // Symbol names
@@ -49,7 +48,7 @@ public class Pass1 {
 
                     // START <address> → initialize LC
                     if (tt.matches("\\d*") && tt.length() > 2) {
-                        lc = Integer.parseInt(tt);
+                        lc = Integer.parseInt(tt); //100
                         IM.println(lc);
                         address = lc - 1;
                     } 
