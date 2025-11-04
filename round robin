@@ -1,64 +1,56 @@
 import java.util.*;
 
 public class RoundRobin {
+    public static void main(String args[]) {
+        Scanner s = new Scanner(System.in);
 
-    public static void main(String[] args) {
-
-        Scanner sc = new Scanner(System.in);
-
-        // Step 1: Input number of processes
         System.out.print("Enter number of processes: ");
-        int n = sc.nextInt();
+        int n = s.nextInt();
 
-        int[] process = new int[n];           // Process IDs
-        int[] arrivalTime = new int[n];       // Arrival times
-        int[] burstTime = new int[n];         // Original burst times
-        int[] remainingBurstTime = new int[n]; // Remaining burst times
-        int[] finish = new int[100];          // Stores finish time of each execution segment
-        int[] turnaroundTime = new int[n];    // Turnaround times
-        int[] waitingTime = new int[n];       // Waiting times
-        int[] seq = new int[100];             // To store process execution order
+        int process[] = new int[n];
+        int arrival[] = new int[n];
+        int burst[] = new int[n];
+        int remaining[] = new int[n];
+        int turnaround[] = new int[n];
+        int waiting[] = new int[n];
+        int finish[] = new int[100];
+        int seq[] = new int[100];
 
-        // Step 2: Input process details
+        // Input
         for (int i = 0; i < n; i++) {
             process[i] = i + 1;
-            System.out.print("Enter arrival time of P" + process[i] + ": ");
-            arrivalTime[i] = sc.nextInt();
-
-            System.out.print("Enter burst time of P" + process[i] + ": ");
-            burstTime[i] = remainingBurstTime[i] = sc.nextInt();
+            System.out.print("\nEnter arrival time of process " + process[i] + ": ");
+            arrival[i] = s.nextInt();
+            System.out.print("Enter burst time of process " + process[i] + ": ");
+            burst[i] = remaining[i] = s.nextInt();
         }
 
-        // Step 3: Input time quantum
-        System.out.print("Enter time quantum: ");
-        int timeQuantum = sc.nextInt();
+        System.out.print("\nEnter time quantum: ");
+        int tq = s.nextInt();
 
-        int totalExecuted = 0; // total CPU time executed so far
-        int totalBurstTime = 0; // total required CPU time
-        for (int bt : burstTime) totalBurstTime += bt;
+        int totalExecuted = 0;
+        int totalBurst = 0;
+        for (int bt : burst) totalBurst += bt;
 
-        int time = 0, k = 0; // current CPU time, execution sequence index
-
+        int time = 0, k = 0;
         System.out.println("\nProcess Execution Sequence: ");
 
-        // Step 4: Round Robin Execution Loop
-        while (totalExecuted != totalBurstTime) {
+        // Round Robin execution
+        while (totalExecuted != totalBurst) {
             for (int i = 0; i < n; i++) {
-                if (remainingBurstTime[i] > 0 && arrivalTime[i] <= time) {
-                    int executedTime;
+                if (remaining[i] > 0 && arrival[i] <= time) {
+                    int executed;
 
-                    // Execute for either the remaining time or time quantum
-                    if (remainingBurstTime[i] <= timeQuantum) {
-                        executedTime = remainingBurstTime[i];
-                        remainingBurstTime[i] = 0;
+                    if (remaining[i] <= tq) {
+                        executed = remaining[i];
+                        remaining[i] = 0;
                     } else {
-                        executedTime = timeQuantum;
-                        remainingBurstTime[i] -= timeQuantum;
+                        executed = tq;
+                        remaining[i] -= tq;
                     }
 
-                    // Update time and record sequence
-                    time += executedTime;
-                    totalExecuted += executedTime;
+                    time += executed;
+                    totalExecuted += executed;
 
                     finish[k] = time;
                     seq[k] = i;
@@ -68,10 +60,9 @@ public class RoundRobin {
                 }
             }
 
-            // If no process arrived yet, move time forward by 1 unit
             boolean anyArrived = false;
             for (int i = 0; i < n; i++) {
-                if (arrivalTime[i] <= time && remainingBurstTime[i] > 0) {
+                if (arrival[i] <= time && remaining[i] > 0) {
                     anyArrived = true;
                     break;
                 }
@@ -81,11 +72,11 @@ public class RoundRobin {
 
         System.out.println("\n");
 
-        float totalTAT = 0, totalWT = 0;
+        float total_tat = 0, total_wt = 0;
 
-        // Step 5: Calculate Turnaround and Waiting Times
+        // Calculate turnaround and waiting times
         for (int i = 0; i < n; i++) {
-            int currentArrival = arrivalTime[i];
+            int currentArrival = arrival[i];
             int tt = 0;
 
             for (int j = 0; j < k; j++) {
@@ -95,29 +86,28 @@ public class RoundRobin {
                 }
             }
 
-            turnaroundTime[i] = tt;
-            waitingTime[i] = turnaroundTime[i] - burstTime[i];
-            totalTAT += turnaroundTime[i];
-            totalWT += waitingTime[i];
-
-            System.out.println("Turnaround time for P" + process[i] + " = " + turnaroundTime[i]);
-            System.out.println("Waiting time for P" + process[i] + " = " + waitingTime[i]);
+            turnaround[i] = tt;
+            waiting[i] = turnaround[i] - burst[i];
+            total_tat += turnaround[i];
+            total_wt += waiting[i];
         }
 
-        // Step 6: Display Summary Table
-        System.out.println("\n-----------------------------------------------");
-        System.out.println("Process\tArrival\tBurst\tTurnaround\tWaiting");
-        System.out.println("-----------------------------------------------");
+        // Display results
+        System.out.println("-------------------------------------------------------------");
+        System.out.printf("%-10s%-10s%-10s%-15s%-15s%-10s\n",
+                "Process", "Arrival", "Burst", "Turnaround", "Waiting", "");
+        System.out.println("-------------------------------------------------------------");
 
         for (int i = 0; i < n; i++) {
-            System.out.printf("P%d\t\t%d\t%d\t%d\t\t%d\n",
-                    process[i], arrivalTime[i], burstTime[i], turnaroundTime[i], waitingTime[i]);
+            System.out.printf("%-10s%-10d%-10d%-15d%-15d%-10d\n",
+                    "P" + process[i], arrival[i], burst[i],
+                    turnaround[i], waiting[i]);
         }
 
-        System.out.println("-----------------------------------------------");
-        System.out.printf("Average Turnaround Time: %.2f\n", totalTAT / n);
-        System.out.printf("Average Waiting Time: %.2f\n", totalWT / n);
+        System.out.println("-------------------------------------------------------------");
+        System.out.printf("Average Turnaround Time = %.2f\n", total_tat / n);
+        System.out.printf("Average Waiting Time = %.2f\n", total_wt / n);
 
-        sc.close();
+        s.close();
     }
 }
