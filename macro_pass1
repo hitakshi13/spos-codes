@@ -1,111 +1,107 @@
 import java.util.*;
 import java.io.*;
-public class macro
-{
-        public static void main(String args[])
-        {
 
-                BufferedReader br;
-                OutputStream oo;
-                String input=null;
-                String tt=null;
-                String arg=null;
-                String macroTokens=null;
-                String mnt[]=new String[10];
-                String mdt[]=new String[20];
-                String AR[]=new String[20];
-                int macroindex[]=new int[10]; //It stores the starting index/line number for each macro (parallel to mnt[]).
-                int mcount=0,arg_count=0;
-                
-                int index=1; //a line counter for the input file; used to record where a MACRO was seen.
-                int macro_enc=0; //macro-encounter flag: 1 means currently inside a macro definition; 0 means not inside.
-              
-                try
-                {
-                        br=new BufferedReader(new FileReader("Input.txt"));
-                        File f3 = new File("mnt.txt");
-                        File f4 = new File("mdt.txt");
-                        File f5 = new File("adt.txt");
-                        PrintWriter p3 = new PrintWriter(f3);
-                        PrintWriter p4 = new PrintWriter(f4);
-                        PrintWriter p5 = new PrintWriter(f5);
-                        while ((input = br.readLine()) != null)
-                        {
-                          StringTokenizer st = new StringTokenizer(input," "); 
-                          tt=st.nextToken();  
-                          if(tt.equals("MACRO"))
-                          {
-                                macro_enc=1;
-                                tt=st.nextToken();
-                                mnt[mcount]=tt;
-                                macroindex[mcount]=index;
-                                p3.println(mnt[mcount]+"\t"+macroindex[mcount]);
-                                p4.println(mnt[mcount]);
-                                p5.println(mnt[mcount]);
-                                mcount++;
-                                
-                                tt=st.nextToken();
-                                StringTokenizer t = new StringTokenizer(tt,",");
-                                while (t.hasMoreTokens())
-                                {
-                                        arg=t.nextToken();
-                                        if(arg.charAt(0)=='&')
-                                        {
-                                                AR[arg_count]=arg;
-                                                p5.println(AR[arg_count]);
-                                                arg_count++;
-                                        }
+public class macro {
+    public static void main(String args[]) {
+
+        BufferedReader br;
+        String input = null, tt = null, arg = null, macroTokens = null;
+        String mnt[] = new String[10];
+        String AR[] = new String[20];
+        int macroindex[] = new int[10]; // Stores starting line index for each macro
+        int mcount = 0, arg_count = 0;
+        int index = 1; // line counter for input file
+        int macro_enc = 0; // 1 = inside macro definition, 0 = outside
+
+        try {
+            br = new BufferedReader(new FileReader("Input.txt"));
+            File f3 = new File("mnt.txt");
+            File f4 = new File("mdt.txt");
+            File f5 = new File("adt.txt");
+
+            PrintWriter p3 = new PrintWriter(f3); // MNT
+            PrintWriter p4 = new PrintWriter(f4); // MDT
+            PrintWriter p5 = new PrintWriter(f5); // ADT
+
+            while ((input = br.readLine()) != null) {
+                StringTokenizer st = new StringTokenizer(input, " ");
+                tt = st.nextToken();
+
+                // --- If a MACRO is encountered ---
+                if (tt.equals("MACRO")) {
+                    macro_enc = 1; // now inside macro definition
+                    tt = st.nextToken(); // macro name
+
+                    mnt[mcount] = tt;
+                    macroindex[mcount] = index;
+
+                    // Write macro name to all 3 tables
+                    p3.println(mnt[mcount] + "\t" + macroindex[mcount]);
+                    p4.println(mnt[mcount]);
+                    p5.println(mnt[mcount]);
+                    mcount++;
+
+                    // Get macro arguments
+                    if (st.hasMoreTokens()) {
+                        tt = st.nextToken();
+                        StringTokenizer t = new StringTokenizer(tt, ",");
+                        while (t.hasMoreTokens()) {
+                            arg = t.nextToken();
+                            if (arg.charAt(0) == '&') {
+                                AR[arg_count] = arg;
+                                p5.println(AR[arg_count]);
+                                arg_count++;
+                            }
+                        }
+                    }
+                }
+
+                // --- Inside macro definition ---
+                else {
+                    if (macro_enc == 1) {
+                        if (input.equals("MEND")) {
+                            macro_enc = 0;
+                            p4.println("MEND");
+                        } else {
+                            StringTokenizer t = new StringTokenizer(input, " ");
+                            while (t.hasMoreTokens()) {
+                                macroTokens = t.nextToken();
+                                boolean replaced = false;
+
+                                // Replace macro arguments with ARi
+                                for (int i = 0; i < arg_count; i++) {
+                                    if (macroTokens.equals(AR[i])) {
+                                        p4.print("AR" + i + " ");
+                                        replaced = true;
+                                        break;
+                                    }
                                 }
-                          }
-                          else
-                          {
-                                 if(macro_enc==1)
-                                 {
-                                      if(input.equals("MEND"))
-                                      {
-                                        macro_enc=0;
-                                        p4.println("MEND");
-                                      }
-                                      else
-                                      {
-                                                StringTokenizer t=new StringTokenizer(input," ");
-                                                while(t.hasMoreTokens())
-                                                {
-                                                     macroTokens=t.nextToken();
-                                                     for(int i=0;i<arg_count;i++)
-                                                     {
-                                                        if(macroTokens.charAt(0)=='&' && macroTokens.equals(AR[i]))
-                                                        {
-                                                                p4.print("AR"+i);
-                                                        }
-                                                     }
-                                                     if(macroTokens.charAt(0)=='&'){}
-                                                     else
-                                                     {
-                                                                p4.print(macroTokens+" ");
-                                                     }
-                                                     if(!t.hasMoreTokens())
-                                                     {
-                                                                p4.println();
-                                                     }
-                                                }
-                                      }
-                                      
-                                 }
-                          }		   
-                        index++;
-                        } 
-                        p3.close();
-                        p4.close();
-                        p5.close();
-                        
+
+                                // Print normal tokens
+                                if (!replaced) {
+                                    p4.print(macroTokens + " ");
+                                }
+
+                                // Move to next line after all tokens
+                                if (!t.hasMoreTokens()) {
+                                    p4.println();
+                                }
+                            }
+                        }
+                    }
                 }
-                catch(Exception e)
-                {
-                        e.printStackTrace();
-                }
+                index++;
+            }
+
+            // Close files
+            p3.close();
+            p4.close();
+            p5.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-       
+    }
 }
 
 
