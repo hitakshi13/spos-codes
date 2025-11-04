@@ -1,110 +1,84 @@
-import java.util.Scanner;
+import java.util.*;
 
-public class SJF_Preemptive {
-
-    // Simple container for process data
-    static class Process {
-        int id;           // process id (1..n)
-        int at;           // arrival time
-        int bt;           // original burst time
-        int remainingBt;  // remaining burst time (changes during simulation)
-        int ct;           // completion time
-        int tat;          // turn around time
-        int wt;           // waiting time
-        int rt;           // response time (first time CPU assigned - arrival)
-        boolean isCompleted = false;
-
-
-        Process(int id, int at, int bt) {
-            this.id = id;
-            this.at = at;
-            this.bt = bt;
-            this.remainingBt = bt;
-            this.rt = -1; // -1 indicates not started yet
-        }
-    }
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
+public class SJF {
+    public static void main(String args[]) {
+        Scanner s = new Scanner(System.in);
 
         System.out.print("Enter number of processes: ");
-        int n = sc.nextInt();
+        int n = s.nextInt();
 
-        Process[] p = new Process[n];
+        int arrival[] = new int[n];
+        int burst[] = new int[n];
+        int completion[] = new int[n];
+        int turntt[] = new int[n];   // turnaround time
+        int wait[] = new int[n];     // waiting time
+        int process[] = new int[n];  // process ids
+        int remainingTime[] = new int[n]; // remaining burst time
+
+        int completedCount = 0;
+        int currentTime = 0;
+        float total_tat = 0, total_wt = 0;
+
+        // Input
         for (int i = 0; i < n; i++) {
-            System.out.print("Enter Arrival time of P" + (i + 1) + ": ");
-            int at = sc.nextInt();
-            System.out.print("Enter Burst time of P" + (i + 1) + ": ");
-            int bt = sc.nextInt();
-            p[i] = new Process(i + 1, at, bt);
+            System.out.print("\nEnter arrival time of process " + (i + 1) + ": ");
+            arrival[i] = s.nextInt();
+            System.out.print("Enter burst time of process " + (i + 1) + ": ");
+            burst[i] = s.nextInt();
+            process[i] = i + 1;
+            remainingTime[i] = burst[i]; // initially remaining = burst
         }
 
-        int time = 0;    // cpu time for process   
-        int completed = 0;  // no of processes completed 
-        int sumTAT = 0, sumWT = 0, sumRT = 0;
-
-        // Continue until all processes are completed
-        while (completed != n) {
-            int idx = -1;
+        // Preemptive SJF (Shortest Remaining Time First)
+        while (completedCount != n) {
+            int currentProcess = -1;
             int minRemaining = Integer.MAX_VALUE;
 
-            // pick the arrived process with the smallest remaining time
+            // Find process with shortest remaining time among arrived ones
             for (int i = 0; i < n; i++) {
-                if (!p[i].isCompleted && p[i].at <= time) {
-                    if (p[i].remainingBt < minRemaining) {
-                        minRemaining = p[i].remainingBt;
-                        idx = i;
-                    } else if (p[i].remainingBt == minRemaining) {
-                        // tie-breaker: earlier arrival time, then smaller id
-                        if (idx == -1
-                                || p[i].at < p[idx].at
-                                || (p[i].at == p[idx].at && p[i].id < p[idx].id)) {
-                            idx = i;
-                        }
-                    }
+                if (arrival[i] <= currentTime && remainingTime[i] > 0 && remainingTime[i] < minRemaining) {
+                    minRemaining = remainingTime[i];
+                    currentProcess = i;
                 }
             }
 
-            if (idx != -1) {
-                // if first time the process gets CPU, record response time
-                if (p[idx].rt == -1) {
-                    p[idx].rt = time - p[idx].at;
-                }
+            if (currentProcess == -1) {
+                currentTime++;
+                continue;
+            }
 
-                // execute for one unit
-                p[idx].remainingBt--;
-                time++;
+            // Execute the process for 1 unit
+            remainingTime[currentProcess]--;
+            currentTime++;
 
-                // if finished, set completion and compute times
-                if (p[idx].remainingBt == 0) {
-                    p[idx].ct = time;
-                    p[idx].tat = p[idx].ct - p[idx].at;
-                    p[idx].wt = p[idx].tat - p[idx].bt;
-                    p[idx].isCompleted = true;
+            // If the process is completed
+            if (remainingTime[currentProcess] == 0) {
+                completedCount++;
+                completion[currentProcess] = currentTime;
+                turntt[currentProcess] = completion[currentProcess] - arrival[currentProcess];
+                wait[currentProcess] = turntt[currentProcess] - burst[currentProcess];
 
-                    sumTAT += p[idx].tat;
-                    sumWT += p[idx].wt;
-                    sumRT += p[idx].rt;
-
-                    completed++;
-                }
-            } else {
-                // no process has arrived yet at current time -> idle CPU
-                time++;
+                total_tat += turntt[currentProcess];
+                total_wt += wait[currentProcess];
             }
         }
 
-        // Print results
-        System.out.println("\nPID\tAT\tBT\tCT\tTAT\tWT\tRT");
+        // Display results
+        System.out.println("\n-------------------------------------------------------------");
+        System.out.printf("%-10s%-10s%-10s%-15s%-15s%-10s\n",
+                "Process", "Arrival", "Burst", "Completion", "Turnaround", "Waiting");
+        System.out.println("-------------------------------------------------------------");
+
         for (int i = 0; i < n; i++) {
-            System.out.printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-                    p[i].id, p[i].at, p[i].bt, p[i].ct, p[i].tat, p[i].wt, p[i].rt);
+            System.out.printf("%-10s%-10d%-10d%-15d%-15d%-10d\n",
+                    "P" + process[i], arrival[i], burst[i],
+                    completion[i], turntt[i], wait[i]);
         }
 
-        System.out.printf("\nAverage TAT: %.2f\n", sumTAT / (float) n);
-        System.out.printf("Average WT: %.2f\n", sumWT / (float) n);
-        System.out.printf("Average RT: %.2f\n", sumRT / (float) n);
+        System.out.println("-------------------------------------------------------------");
+        System.out.printf("Average Turnaround Time = %.2f\n", total_tat / n);
+        System.out.printf("Average Waiting Time = %.2f\n", total_wt / n);
 
-        sc.close();
+        s.close();
     }
 }
