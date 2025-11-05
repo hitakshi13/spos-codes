@@ -1,113 +1,85 @@
 import java.util.*;
 
 public class RoundRobin {
-    public static void main(String args[]) {
-        Scanner s = new Scanner(System.in);
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
 
         System.out.print("Enter number of processes: ");
-        int n = s.nextInt();
+        int n = sc.nextInt();
 
-        int process[] = new int[n];
-        int arrival[] = new int[n];
-        int burst[] = new int[n];
-        int remaining[] = new int[n];
-        int turnaround[] = new int[n];
-        int waiting[] = new int[n];
-        int finish[] = new int[100];
-        int seq[] = new int[100];
+        int[] arrivalTime = new int[n];
+        int[] burstTime = new int[n];
+        int[] remainingTime = new int[n];
+        int[] finishTime = new int[100];
+        int[] turnaroundTime = new int[n];
+        int[] waitingTime = new int[n];
+        int[] processId = new int[n];
+        int[] sequence = new int[100];
 
-        // Input
         for (int i = 0; i < n; i++) {
-            process[i] = i + 1;
-            System.out.print("\nEnter arrival time of process " + process[i] + ": ");
-            arrival[i] = s.nextInt();
-            System.out.print("Enter burst time of process " + process[i] + ": ");
-            burst[i] = remaining[i] = s.nextInt();
+            System.out.print("Enter arrival time of Process " + (i + 1) + ": ");
+            arrivalTime[i] = sc.nextInt();
+
+            System.out.print("Enter burst time of Process " + (i + 1) + ": ");
+            burstTime[i] = remainingTime[i] = sc.nextInt();
+
+            processId[i] = i + 1;
         }
 
-        System.out.print("\nEnter time quantum: ");
-        int tq = s.nextInt();
+        System.out.print("Enter time quantum: ");
+        int quantum = sc.nextInt();
 
-        int totalExecuted = 0;
-        int totalBurst = 0;
-        for (int bt : burst) totalBurst += bt;
+        int totalBurst = 0, totalTime = 0, index = 0;
+        for (int time : burstTime)
+            totalBurst += time;
 
-        int time = 0, k = 0;
-        System.out.println("\nProcess Execution Sequence: ");
-
-        // Round Robin execution
-        while (totalExecuted != totalBurst) {
+        System.out.println("\n--- Process Execution Order ---");
+        while (totalTime != totalBurst) {
             for (int i = 0; i < n; i++) {
-                if (remaining[i] > 0 && arrival[i] <= time) {
-                    int executed;
-
-                    if (remaining[i] <= tq) {
-                        executed = remaining[i];
-                        remaining[i] = 0;
-                    } else {
-                        executed = tq;
-                        remaining[i] -= tq;
-                    }
-
-                    time += executed;
-                    totalExecuted += executed;
-
-                    finish[k] = time;
-                    seq[k] = i;
-                    k++;
-
-                    System.out.print("P" + process[i] + " ");
+                if (remainingTime[i] > 0) {
+                    int execTime = Math.min(remainingTime[i], quantum);
+                    remainingTime[i] -= execTime;
+                    totalTime += execTime;
+                    finishTime[index] = totalTime;
+                    sequence[index] = i;
+                    index++;
+                    System.out.print("P" + (i + 1) + " ");
                 }
             }
-
-            boolean anyArrived = false;
-            for (int i = 0; i < n; i++) {
-                if (arrival[i] <= time && remaining[i] > 0) {
-                    anyArrived = true;
-                    break;
-                }
-            }
-            if (!anyArrived) time++;
         }
 
         System.out.println("\n");
 
-        float total_tat = 0, total_wt = 0;
+        float totalTAT = 0, totalWT = 0;
 
-        // Calculate turnaround and waiting times
         for (int i = 0; i < n; i++) {
-            int currentArrival = arrival[i];
-            int tt = 0;
+            int tempArrival = arrivalTime[i], tat = 0;
 
-            for (int j = 0; j < k; j++) {
-                if (seq[j] == i) {
-                    tt += (finish[j] - currentArrival);
-                    currentArrival = finish[j];
+            for (int j = 0; j < index; j++) {
+                if (sequence[j] == i) {
+                    tat += (finishTime[j] - tempArrival);
+                    tempArrival = finishTime[j];
                 }
             }
 
-            turnaround[i] = tt;
-            waiting[i] = turnaround[i] - burst[i];
-            total_tat += turnaround[i];
-            total_wt += waiting[i];
+            turnaroundTime[i] = tat;
+            waitingTime[i] = turnaroundTime[i] - burstTime[i];
+            totalTAT += turnaroundTime[i];
+            totalWT += waitingTime[i];
         }
 
-        // Display results
-        System.out.println("-------------------------------------------------------------");
-        System.out.printf("%-10s%-10s%-10s%-15s%-15s\n",
-                "Process", "Arrival", "Burst", "Turnaround", "Waiting");
-        System.out.println("-------------------------------------------------------------");
+        System.out.println("--------------------------------------------------");
+        System.out.printf("%-10s %-15s %-15s %-15s %-15s%n", 
+                          "Process", "Arrival Time", "Burst Time", "Turnaround", "Waiting");
+        System.out.println("--------------------------------------------------");
 
         for (int i = 0; i < n; i++) {
-            System.out.printf("%-10s%-10d%-10d%-15d%-15d\n",
-                    "P" + process[i], arrival[i], burst[i],
-                    turnaround[i], waiting[i]);
+            System.out.printf("%-10s %-15d %-15d %-15d %-15d%n", 
+                              "P" + processId[i], arrivalTime[i], burstTime[i], turnaroundTime[i], waitingTime[i]);
         }
 
-        System.out.println("-------------------------------------------------------------");
-        System.out.printf("Average Turnaround Time = %.2f\n", total_tat / n);
-        System.out.printf("Average Waiting Time = %.2f\n", total_wt / n);
-
-        s.close();
+        System.out.println("--------------------------------------------------");
+        System.out.printf("Average Turnaround Time: %.2f%n", totalTAT / n);
+        System.out.printf("Average Waiting Time: %.2f%n", totalWT / n);
     }
 }
